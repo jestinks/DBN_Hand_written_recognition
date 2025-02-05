@@ -1,12 +1,9 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.datasets import mnist
-from sklearn.preprocessing import MinMaxScaler
-import pickle
-import os
-import cv2
 import gradio as gr
+import os
 import matplotlib.pyplot as plt
+from utils import load_mnist_data, save_dbn_model, load_dbn_model, preprocess_custom_image, process_custom_input
 
 class RBM:
     def __init__(self, n_visible, n_hidden, learning_rate=0.01):
@@ -67,38 +64,11 @@ class DBN:
             rbm.train(input_data, epochs, batch_size)
             input_data, _ = rbm.sample_hidden(input_data)
 
-def load_mnist_data():
-    (x_train, y_train), (_, _) = mnist.load_data()
-    x_train = x_train.reshape(x_train.shape[0], -1)
-    scaler = MinMaxScaler()
-    x_train = scaler.fit_transform(x_train)
-    return x_train, y_train
-
-def save_dbn_model(dbn, filename='dbn_model.pkl'):
-    with open(filename, 'wb') as f:
-        pickle.dump(dbn, f)
-
-def load_dbn_model(filename='dbn_model.pkl'):
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
-
-def preprocess_custom_image(image):
-    img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
-    img = cv2.resize(img, (28, 28))
-    img = 255 - img
-    img = img / 255.0
-    img = img.reshape(1, 784)
-    return img
-
-def process_custom_input(image, model):
-    processed_img = preprocess_custom_image(image)
-    hidden, reconstruction = model.get_hidden_and_reconstruction(processed_img)
-    return processed_img.reshape(28, 28), hidden.reshape(10, 10), reconstruction.reshape(28, 28)
 
 def train_model():
-    x_train, y_train = load_mnist_data()
+    x_train, y_train, _ , _ = load_mnist_data()
     dbn = DBN([784, 500, 250, 100], learning_rate=0.01)
-    dbn.train(x_train, epochs=6, batch_size=128)
+    dbn.train(x_train, epochs=15, batch_size=128)
     save_dbn_model(dbn)
     return "Model trained and saved successfully!"
 
@@ -120,11 +90,11 @@ def display_reconstructed_digits():
         dbn = load_dbn_model()
     else:
         return "Model not found. Train the model first!"
-    x_train, y_train = load_mnist_data()
+    _ ,_ , x_test, y_test = load_mnist_data()
     fig, axes = plt.subplots(2, 5, figsize=(15, 6))
     for i in range(10):
-        index = np.where(y_train == i)[0][0]
-        sample = x_train[index:index+1]
+        index = np.where(y_test == i)[0][0]
+        sample = x_test[index:index+1]
         _, reconstruction = dbn.get_hidden_and_reconstruction(sample)
         ax = axes[i // 5, i % 5]
         ax.imshow(reconstruction.reshape(28, 28), cmap='gray')
