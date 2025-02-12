@@ -90,17 +90,35 @@ def display_reconstructed_digits():
         dbn = load_dbn_model()
     else:
         return "Model not found. Train the model first!"
-    _ ,_ , x_test, y_test = load_mnist_data()
-    fig, axes = plt.subplots(2, 5, figsize=(15, 6))
-    for i in range(10):
-        index = np.where(y_test == i)[0][0]
-        sample = x_test[index:index+1]
-        _, reconstruction = dbn.get_hidden_and_reconstruction(sample)
-        ax = axes[i // 5, i % 5]
-        ax.imshow(reconstruction.reshape(28, 28), cmap='gray')
-        ax.set_title(f'Reconstructed {i}')
-        ax.axis('off')
-    plt.close()
+    
+    _, _, x_test, y_test = load_mnist_data()
+    
+    fig, axes = plt.subplots(3, 10, figsize=(20, 6))
+    
+    for i in range(10):  
+        index = np.where(y_test == i)[0][0]  
+        sample = x_test[index:index + 1]
+        
+        hidden, reconstruction = dbn.get_hidden_and_reconstruction(sample)
+        
+        original = sample.reshape(28, 28)
+        hidden_repr = hidden.reshape(10, 10)  
+        reconstructed = reconstruction.reshape(28, 28)
+        
+        axes[0, i].imshow(original, cmap='gray')
+        axes[0, i].set_title(f'Original {i}')
+        axes[0, i].axis('off')
+        
+        axes[1, i].imshow(hidden_repr, cmap='gray')
+        axes[1, i].set_title(f'Hidden {i}')
+        axes[1, i].axis('off')
+        
+        axes[2, i].imshow(reconstructed, cmap='gray')
+        axes[2, i].set_title(f'Reconstructed {i}')
+        axes[2, i].axis('off')
+    
+    plt.tight_layout()
+    plt.close(fig)
     return fig
 
 def interface():
@@ -111,7 +129,7 @@ def interface():
         train_button.click(train_model, outputs=train_output)
         gr.Markdown("## Upload an Image for Prediction")
         image_input = gr.Image(type="pil")
-        predict_button = gr.Button("Predict")
+        predict_button = gr.Button("Reconstruct")
         image_output = gr.Plot()
         predict_button.click(predict, inputs=image_input, outputs=image_output)
         gr.Markdown("## Display Reconstructed Digits (0-9)")
